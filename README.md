@@ -1,4 +1,4 @@
-# Sarmaaya Mutual Funds Dashboard
+# Mutual Funds Dashboard
 
 A modern, responsive dashboard for displaying Pakistani mutual funds data from the Sarmaaya API.
 
@@ -10,13 +10,6 @@ A modern, responsive dashboard for displaying Pakistani mutual funds data from t
 - 📄 Server-side pagination
 - 📱 Fully responsive design
 - 🎨 Modern gradient UI with hover effects
-
-## API
-
-This dashboard uses the Sarmaaya API:
-- Base URL: `https://beta-restapi.sarmaaya.pk/api/mutual-funds`
-- Filters: `isSheriah`, `riskProfile`
-- Pagination: `page`, `limit`
 
 ## Deployment
 
