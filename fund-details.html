@@ -154,27 +154,15 @@
             <!-- Fund Header -->
             <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span id="fundShariah" class="hidden text-2xl">🕌</span>
-                            <h1 id="fundName" class="text-3xl font-bold text-gray-800">-</h1>
-                        </div>
-                        <div class="flex flex-wrap gap-4 text-sm text-gray-600">
-                            <div>
-                                <span class="font-medium">Fund ID:</span>
-                                <span id="fundId" class="ml-1">-</span>
-                            </div>
-                            <div>
-                                <span class="font-medium">Type:</span>
-                                <span id="fundType" class="ml-1">-</span>
-                            </div>
-                            <div>
-                                <span class="font-medium">AMC:</span>
-                                <span id="fundAmc" class="ml-1">-</span>
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-3 flex-1">
+                        <span id="fundShariah" class="hidden text-2xl">🕌</span>
+                        <h1 id="fundName" class="text-3xl font-bold text-gray-800">-</h1>
+                        <div id="fundRiskBadge" class="px-4 py-2 rounded-full text-sm font-semibold">-</div>
                     </div>
-                    <div id="fundRiskBadge" class="px-4 py-2 rounded-full text-sm font-semibold">-</div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-500 mb-1">NAV</div>
+                        <div id="fundNavDisplay" class="text-2xl font-bold text-gray-800">-</div>
+                    </div>
                 </div>
             </div>
 
@@ -392,9 +380,6 @@
             // Render fund header
             if (fundData) {
                 document.getElementById('fundName').textContent = fundData.name || sunburstData.mutualFundName;
-                document.getElementById('fundId').textContent = fundData.fundId || fundId;
-                document.getElementById('fundType').textContent = fundData.fundType || 'Mutual Fund';
-                document.getElementById('fundAmc').textContent = fundData.amcName || '-';
 
                 // Show Islamic icon if Shariah compliant
                 if (fundData.isShariah) {
@@ -408,6 +393,9 @@
                     fundData.riskProfile === 'Medium' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700';
                 riskBadge.className = `px-4 py-2 rounded-full text-sm font-semibold ${riskClass}`;
                 riskBadge.textContent = `${fundData.riskProfile} Risk`;
+
+                // NAV Display in header
+                document.getElementById('fundNavDisplay').textContent = parseFloat(fundData.nav || 0).toFixed(4);
 
                 // Stats
                 document.getElementById('fundNav').textContent = parseFloat(fundData.nav || 0).toFixed(4);
@@ -429,7 +417,6 @@
                 document.getElementById('fundAum').textContent = aumFormatted;
             } else {
                 document.getElementById('fundName').textContent = sunburstData.mutualFundName;
-                document.getElementById('fundId').textContent = fundId;
             }
 
             // Fund change percent from sunburst
