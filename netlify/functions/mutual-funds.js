@@ -19,16 +19,37 @@ exports.handler = async function(event, context) {
     const queryParams = event.queryStringParameters || {};
     
     // Build the API URL with query parameters
-    const apiUrl = new URL('https://beta-restapi.sarmaaya.pk/api/mutual-funds');
-    Object.keys(queryParams).forEach(key => {
-      apiUrl.searchParams.append(key, queryParams[key]);
-    });
+    let apiUrl = 'https://beta-restapi.sarmaaya.pk/api/mutual-funds';
+    const params = new URLSearchParams(queryParams);
+    if (params.toString()) {
+      apiUrl += '?' + params.toString();
+    }
 
-    console.log('Fetching from:', apiUrl.toString());
+    console.log('Fetching from:', apiUrl);
 
-    // Fetch from the actual API
-    const response = await fetch(apiUrl.toString());
-    const data = await response.json();
+    // Fetch from the actual API using native fetch (Node 18+) or require https
+    let data;
+    if (typeof fetch !== 'undefined') {
+      // Use native fetch if available (Node 18+)
+      const response = await fetch(apiUrl);
+      data = await response.json();
+    } else {
+      // Fallback to https module for older Node versions
+      const https = require('https');
+      data = await new Promise((resolve, reject) => {
+        https.get(apiUrl, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            try {
+              resolve(JSON.parse(body));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        }).on('error', reject);
+      });
+    }
 
     return {
       statusCode: 200,

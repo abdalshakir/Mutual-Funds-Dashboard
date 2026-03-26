@@ -19,9 +19,29 @@ exports.handler = async function(event, context) {
     
     console.log('Fetching AMCs from:', apiUrl);
 
-    // Fetch from the actual API
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+    // Fetch from the actual API using native fetch (Node 18+) or require https
+    let data;
+    if (typeof fetch !== 'undefined') {
+      // Use native fetch if available (Node 18+)
+      const response = await fetch(apiUrl);
+      data = await response.json();
+    } else {
+      // Fallback to https module for older Node versions
+      const https = require('https');
+      data = await new Promise((resolve, reject) => {
+        https.get(apiUrl, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            try {
+              resolve(JSON.parse(body));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        }).on('error', reject);
+      });
+    }
 
     return {
       statusCode: 200,
