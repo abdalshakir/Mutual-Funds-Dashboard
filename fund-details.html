@@ -82,6 +82,36 @@
             background: linear-gradient(to right, #f0f9ff, #fef3c7);
         }
 
+        .sector-row {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sector-row:hover {
+            background: linear-gradient(to right, #dbeafe, #e0e7ff);
+            transform: scale(1.01);
+        }
+
+        .sector-row.selected {
+            background: linear-gradient(to right, #bfdbfe, #c7d2fe);
+            font-weight: 600;
+        }
+
+        .legend-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .legend-item:hover {
+            background: #f3f4f6;
+            transform: translateX(4px);
+        }
+
+        .legend-item.selected {
+            background: #e0e7ff;
+            border-left: 3px solid #3b82f6;
+        }
+
         .loading-shimmer {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
@@ -207,17 +237,94 @@
             <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Portfolio Composition</h2>
                 
-                <!-- Sunburst Chart Container -->
-                <div id="sunburstContainer" class="hidden">
-                    <div id="sunburstChart" class="w-full flex justify-center mb-6">
-                        <!-- Chart will be rendered here -->
+                <!-- Donut Chart + Table Container -->
+                <div id="portfolioContainer" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                        <!-- Left: Donut Chart -->
+                        <div class="lg:col-span-5">
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Sector Allocation</h3>
+                                <div id="donutChart" class="flex justify-center">
+                                    <!-- Donut chart will be rendered here -->
+                                </div>
+                                <div id="chartLegend" class="mt-4 max-h-64 overflow-y-auto">
+                                    <!-- Legend will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Sector Summary -->
+                        <div class="lg:col-span-7">
+                            <div class="bg-white rounded-xl border border-gray-200 p-4">
+                                <h3 class="text-lg font-bold text-gray-800 mb-4">Sector Overview</h3>
+                                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                                    <table class="w-full">
+                                        <thead class="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">Sector</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Weight</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Change</th>
+                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Companies</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sectorSummaryTable">
+                                            <!-- Sectors will be inserted here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- Legend/Selected Info -->
-                    <div id="selectedInfo" class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                        <div class="text-sm text-gray-600 mb-1">Click on sectors or companies to see details</div>
-                        <div id="selectionDetails" class="text-lg font-semibold text-gray-800">
-                            Hover or click to explore
+
+                    <!-- Selected Sector Details -->
+                    <div id="sectorDetails" class="hidden">
+                        <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-gray-800" id="selectedSectorName">-</h3>
+                                <button onclick="clearSectorSelection()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium text-gray-700 transition">
+                                    Clear Selection
+                                </button>
+                            </div>
+
+                            <!-- Sector Stats -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                    <div class="text-xs text-gray-500 mb-1">Weightage</div>
+                                    <div class="text-xl font-bold text-blue-600" id="selectedSectorWeightage">-</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                    <div class="text-xs text-gray-500 mb-1">Change</div>
+                                    <div class="text-xl font-bold" id="selectedSectorChange">-</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                    <div class="text-xs text-gray-500 mb-1">Volume</div>
+                                    <div class="text-xl font-bold text-gray-800" id="selectedSectorVolume">-</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                    <div class="text-xs text-gray-500 mb-1">Market Value</div>
+                                    <div class="text-xl font-bold text-gray-800" id="selectedSectorMarketValue">-</div>
+                                </div>
+                            </div>
+
+                            <!-- Companies Table -->
+                            <h4 class="text-lg font-semibold text-gray-800 mb-3">Companies in this Sector</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">#</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">Symbol</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Weightage</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Change</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Volume</th>
+                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Market Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="companiesTable">
+                                        <!-- Companies will be inserted here -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -344,6 +451,8 @@
             renderSectors();
         }
 
+        let selectedSectorIndex = null;
+
         function renderSectors() {
             // Check if sectors data exists
             if (!sunburstData.sectors || sunburstData.sectors.length === 0) {
@@ -351,227 +460,207 @@
                 return;
             }
 
-            // Show sunburst container
-            document.getElementById('sunburstContainer').classList.remove('hidden');
+            // Show portfolio container
+            document.getElementById('portfolioContainer').classList.remove('hidden');
 
-            // Prepare data for D3 sunburst
-            const sunburstChartData = prepareSunburstData();
+            // Render donut chart
+            createDonutChart();
             
-            // Render the sunburst chart
-            createSunburstChart(sunburstChartData);
+            // Render sector summary table
+            renderSectorSummaryTable();
         }
 
-        function prepareSunburstData() {
-            // Create hierarchical data structure for D3
-            const data = {
-                name: sunburstData.mutualFundName,
-                children: sunburstData.sectors.map(sector => ({
-                    name: sector.sector,
-                    sectorId: sector.sectorId,
-                    weightage: sector.sectorWeightage,
-                    changePercent: sector.sectorChangePercent,
-                    volume: sector.sectorVolume,
-                    marketValue: sector.sectorMarketValue,
-                    children: sector.companies.map(company => ({
-                        name: company.symbol,
-                        weightage: company.weightage,
-                        changePercent: company.changePercent,
-                        volume: company.volume,
-                        marketValue: company.marketValue,
-                        isSector: false
-                    })),
-                    isSector: true
-                }))
-            };
-
-            return data;
-        }
-
-        function createSunburstChart(data) {
-            const width = 600;
-            const height = 600;
+        function createDonutChart() {
+            const width = 350;
+            const height = 350;
             const radius = Math.min(width, height) / 2;
+            const innerRadius = radius * 0.6; // Donut hole
 
-            // Color scale for sectors
-            const color = d3.scaleOrdinal()
-                .domain(data.children.map(d => d.name))
-                .range([
-                    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
-                    '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
-                    '#f97316', '#6366f1', '#84cc16', '#a855f7'
-                ]);
+            // Color scale
+            const colors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
+                '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
+                '#f97316', '#6366f1', '#84cc16', '#a855f7'
+            ];
 
-            // Create hierarchy
-            const hierarchy = d3.hierarchy(data)
-                .sum(d => d.weightage || 0)
-                .sort((a, b) => b.value - a.value);
+            // Prepare data
+            const data = sunburstData.sectors.map((sector, i) => ({
+                name: sector.sector,
+                value: sector.sectorWeightage,
+                color: colors[i % colors.length],
+                index: i
+            }));
 
-            // Create partition layout
-            const partition = d3.partition()
-                .size([2 * Math.PI, radius]);
-
-            const root = partition(hierarchy);
+            // Create pie generator
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
 
             // Create arc generator
             const arc = d3.arc()
-                .startAngle(d => d.x0)
-                .endAngle(d => d.x1)
-                .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
-                .padRadius(radius / 2)
-                .innerRadius(d => d.y0)
-                .outerRadius(d => d.y1 - 1);
+                .innerRadius(innerRadius)
+                .outerRadius(radius);
+
+            const arcHover = d3.arc()
+                .innerRadius(innerRadius)
+                .outerRadius(radius + 10);
 
             // Clear previous chart
-            d3.select('#sunburstChart').selectAll('*').remove();
+            d3.select('#donutChart').selectAll('*').remove();
 
             // Create SVG
-            const svg = d3.select('#sunburstChart')
+            const svg = d3.select('#donutChart')
                 .append('svg')
-                .attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`)
-                .style('max-width', '600px')
+                .attr('viewBox', `0 0 ${width} ${height}`)
+                .style('max-width', '350px')
                 .style('height', 'auto')
-                .style('font', '12px sans-serif');
+                .append('g')
+                .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
-            // Add paths
-            const path = svg.append('g')
-                .selectAll('path')
-                .data(root.descendants().filter(d => d.depth > 0))
-                .join('path')
-                .attr('fill', d => {
-                    if (d.depth === 1) {
-                        // Sector level - use color scale
-                        return color(d.data.name);
-                    } else {
-                        // Company level - lighter shade of parent sector
-                        const parentColor = color(d.parent.data.name);
-                        return d3.color(parentColor).brighter(0.5);
-                    }
-                })
+            // Add slices
+            const slices = svg.selectAll('path')
+                .data(pie(data))
+                .enter()
+                .append('path')
                 .attr('d', arc)
+                .attr('fill', d => d.data.color)
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 3)
                 .style('cursor', 'pointer')
-                .style('stroke', '#fff')
-                .style('stroke-width', 2)
                 .on('mouseover', function(event, d) {
                     d3.select(this)
-                        .style('opacity', 0.8)
-                        .style('stroke-width', 3);
-                    
-                    showDetails(d);
+                        .transition()
+                        .duration(200)
+                        .attr('d', arcHover);
                 })
                 .on('mouseout', function(event, d) {
-                    d3.select(this)
-                        .style('opacity', 1)
-                        .style('stroke-width', 2);
+                    if (selectedSectorIndex !== d.data.index) {
+                        d3.select(this)
+                            .transition()
+                            .duration(200)
+                            .attr('d', arc);
+                    }
                 })
                 .on('click', function(event, d) {
-                    showDetails(d);
+                    selectSector(d.data.index);
                 });
-
-            // Add labels for sectors (outer ring)
-            svg.append('g')
-                .attr('pointer-events', 'none')
-                .attr('text-anchor', 'middle')
-                .selectAll('text')
-                .data(root.descendants().filter(d => d.depth === 1 && (d.x1 - d.x0) > 0.1))
-                .join('text')
-                .attr('transform', d => {
-                    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-                    const y = (d.y0 + d.y1) / 2;
-                    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-                })
-                .attr('dy', '0.35em')
-                .style('font-size', '11px')
-                .style('font-weight', 'bold')
-                .style('fill', '#fff')
-                .text(d => d.data.name.length > 20 ? d.data.name.substring(0, 17) + '...' : d.data.name);
 
             // Add center text
             svg.append('text')
                 .attr('text-anchor', 'middle')
                 .attr('dy', '-0.5em')
-                .style('font-size', '16px')
+                .style('font-size', '14px')
                 .style('font-weight', 'bold')
                 .style('fill', '#1f2937')
-                .text(sunburstData.mutualFundName.substring(0, 20));
+                .text('Portfolio');
 
             svg.append('text')
                 .attr('text-anchor', 'middle')
                 .attr('dy', '1em')
-                .style('font-size', '14px')
+                .style('font-size', '12px')
                 .style('fill', '#6b7280')
-                .text('Portfolio');
+                .text('by Sector');
 
-            // Add animation
-            path.style('opacity', 0)
-                .transition()
+            // Animation
+            slices.transition()
                 .duration(800)
-                .style('opacity', 1);
+                .attrTween('d', function(d) {
+                    const i = d3.interpolate(d.startAngle, d.endAngle);
+                    return function(t) {
+                        d.endAngle = i(t);
+                        return arc(d);
+                    };
+                });
+
+            // Render legend
+            renderLegend(data);
         }
 
-        function showDetails(d) {
-            const detailsEl = document.getElementById('selectionDetails');
+        function renderLegend(data) {
+            const legend = d3.select('#chartLegend');
+            legend.selectAll('*').remove();
+
+            const items = legend.selectAll('div')
+                .data(data)
+                .enter()
+                .append('div')
+                .attr('class', 'legend-item flex items-center gap-3 p-2 rounded-lg')
+                .style('cursor', 'pointer')
+                .on('click', (event, d) => selectSector(d.index));
+
+            items.append('div')
+                .style('width', '16px')
+                .style('height', '16px')
+                .style('border-radius', '4px')
+                .style('background-color', d => d.color)
+                .style('flex-shrink', '0');
+
+            items.append('div')
+                .attr('class', 'flex-1')
+                .html(d => `
+                    <div class="text-sm font-medium text-gray-800 truncate">${d.name}</div>
+                    <div class="text-xs text-gray-500">${d.value.toFixed(2)}%</div>
+                `);
+        }
+
+        function renderSectorSummaryTable() {
+            const tbody = document.getElementById('sectorSummaryTable');
+            tbody.innerHTML = sunburstData.sectors.map((sector, index) => `
+                <tr class="sector-row border-b border-gray-100" onclick="selectSector(${index})">
+                    <td class="px-4 py-3">
+                        <div class="font-semibold text-gray-800 text-sm">${sector.sector}</div>
+                        <div class="text-xs text-gray-500">${sector.sectorId}</div>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <span class="font-bold text-blue-600">${sector.sectorWeightage.toFixed(2)}%</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <span class="font-semibold ${sector.sectorChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
+                            ${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-gray-600">${sector.companies.length}</td>
+                </tr>
+            `).join('');
+        }
+
+        function selectSector(index) {
+            selectedSectorIndex = index;
+            const sector = sunburstData.sectors[index];
+
+            // Update selected styles
+            document.querySelectorAll('.sector-row').forEach((row, i) => {
+                if (i === index) {
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+            });
+
+            document.querySelectorAll('.legend-item').forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+
+            // Show sector details
+            document.getElementById('sectorDetails').classList.remove('hidden');
+            document.getElementById('selectedSectorName').textContent = sector.sector;
+            document.getElementById('selectedSectorWeightage').textContent = `${sector.sectorWeightage.toFixed(2)}%`;
             
-            if (d.depth === 1) {
-                // Sector selected
-                const sector = d.data;
-                detailsEl.innerHTML = `
-                    <div class="font-bold text-xl text-blue-600 mb-2">${sector.name}</div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                            <div class="text-gray-500">Weightage</div>
-                            <div class="font-semibold text-gray-800">${sector.weightage?.toFixed(2)}%</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Change</div>
-                            <div class="font-semibold ${sector.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                ${sector.changePercent >= 0 ? '+' : ''}${sector.changePercent?.toFixed(2)}%
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Volume</div>
-                            <div class="font-semibold text-gray-800">${formatNumber(sector.volume)}</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Market Value</div>
-                            <div class="font-semibold text-gray-800">PKR ${formatNumber(sector.marketValue)}</div>
-                        </div>
-                    </div>
-                    <div class="mt-3 text-xs text-gray-500">${sector.children?.length || 0} companies in this sector</div>
-                `;
-            } else if (d.depth === 2) {
-                // Company selected
-                const company = d.data;
-                const sector = d.parent.data;
-                detailsEl.innerHTML = `
-                    <div class="font-bold text-xl text-indigo-600 mb-1">${company.name}</div>
-                    <div class="text-sm text-gray-600 mb-2">in ${sector.name}</div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                            <div class="text-gray-500">Weightage</div>
-                            <div class="font-semibold text-gray-800">${company.weightage?.toFixed(2)}%</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Change</div>
-                            <div class="font-semibold ${company.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                ${company.changePercent >= 0 ? '+' : ''}${company.changePercent?.toFixed(2)}%
-                            </div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Volume</div>
-                            <div class="font-semibold text-gray-800">${formatNumber(company.volume)}</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Market Value</div>
-                            <div class="font-semibold text-gray-800">PKR ${formatNumber(company.marketValue)}</div>
-                        </div>
-                    </div>
-                `;
-            }
-        }
+            const changeEl = document.getElementById('selectedSectorChange');
+            changeEl.textContent = `${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%`;
+            changeEl.className = `text-xl font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            
+            document.getElementById('selectedSectorVolume').textContent = formatNumber(sector.sectorVolume);
+            document.getElementById('selectedSectorMarketValue').textContent = `PKR ${formatNumber(sector.sectorMarketValue)}`;
 
-        function createSectorCard(sector) {
-            const companiesHtml = sector.companies.map((company, idx) => `
-                <tr class="company-row border-b border-gray-100 last:border-0">
+            // Render companies table
+            const companiesTable = document.getElementById('companiesTable');
+            companiesTable.innerHTML = sector.companies.map((company, idx) => `
+                <tr class="company-row border-b border-gray-100">
                     <td class="px-4 py-3 text-gray-600">${idx + 1}</td>
                     <td class="px-4 py-3 font-semibold text-gray-800">${company.symbol}</td>
                     <td class="px-4 py-3 text-right text-gray-700">${company.weightage.toFixed(2)}%</td>
@@ -583,58 +672,15 @@
                 </tr>
             `).join('');
 
-            return `
-                <div class="sector-card bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-5">
-                    <!-- Sector Header -->
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">${sector.sector}</h3>
-                            <p class="text-sm text-gray-500">Sector ID: ${sector.sectorId}</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-bold text-blue-600">${sector.sectorWeightage.toFixed(2)}%</div>
-                            <div class="text-sm text-gray-500">Weightage</div>
-                        </div>
-                    </div>
+            // Scroll to details
+            document.getElementById('sectorDetails').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
 
-                    <!-- Sector Stats -->
-                    <div class="grid grid-cols-3 gap-4 mb-4 p-4 bg-white rounded-lg border border-gray-100">
-                        <div class="text-center">
-                            <div class="text-xs text-gray-500 mb-1">Change</div>
-                            <div class="text-lg font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                ${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%
-                            </div>
-                        </div>
-                        <div class="text-center border-l border-r border-gray-200">
-                            <div class="text-xs text-gray-500 mb-1">Volume</div>
-                            <div class="text-lg font-bold text-gray-800">${formatNumber(sector.sectorVolume)}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-xs text-gray-500 mb-1">Market Value</div>
-                            <div class="text-lg font-bold text-gray-800">PKR ${formatNumber(sector.sectorMarketValue)}</div>
-                        </div>
-                    </div>
-
-                    <!-- Companies Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">#</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">Symbol</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Weightage</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Change</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Volume</th>
-                                    <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Market Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${companiesHtml}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
+        function clearSectorSelection() {
+            selectedSectorIndex = null;
+            document.getElementById('sectorDetails').classList.add('hidden');
+            document.querySelectorAll('.sector-row').forEach(row => row.classList.remove('selected'));
+            document.querySelectorAll('.legend-item').forEach(item => item.classList.remove('selected'));
         }
 
         function formatNumber(num) {
