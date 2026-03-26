@@ -239,138 +239,85 @@
                 
                 <!-- Donut Chart + Table Container -->
                 <div id="portfolioContainer" class="hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-                        <!-- Left: Donut Chart + Info Card -->
-                        <div class="lg:col-span-5">
-                            <div class="grid grid-cols-1 gap-4">
-                                <!-- Donut Chart -->
-                                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-                                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Sector Allocation</h3>
-                                    <div id="donutChart" class="flex justify-center">
-                                        <!-- Donut chart will be rendered here -->
-                                    </div>
-                                </div>
-
-                                <!-- Hover Info Card -->
-                                <div id="hoverInfoCard" class="bg-white rounded-xl border-2 border-gray-200 p-5 transition-all duration-300">
-                                    <div id="defaultInfo" class="text-center py-4">
-                                        <div class="text-gray-400 mb-2">
-                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-sm text-gray-500 font-medium">Hover over a sector to see details</p>
-                                    </div>
-
-                                    <div id="sectorInfo" class="hidden">
-                                        <div class="flex items-center gap-3 mb-4">
-                                            <div id="sectorColorBox" class="w-4 h-4 rounded" style="background: #3b82f6;"></div>
-                                            <h4 id="sectorInfoName" class="text-lg font-bold text-gray-800 flex-1">-</h4>
-                                        </div>
-                                        
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3">
-                                                <div class="text-xs text-blue-600 font-medium mb-1">Weightage</div>
-                                                <div id="sectorInfoWeightage" class="text-xl font-bold text-blue-700">-</div>
-                                            </div>
-                                            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
-                                                <div class="text-xs text-green-600 font-medium mb-1">Change</div>
-                                                <div id="sectorInfoChange" class="text-xl font-bold">-</div>
-                                            </div>
-                                            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3">
-                                                <div class="text-xs text-purple-600 font-medium mb-1">Volume</div>
-                                                <div id="sectorInfoVolume" class="text-sm font-bold text-purple-700">-</div>
-                                            </div>
-                                            <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3">
-                                                <div class="text-xs text-orange-600 font-medium mb-1">Companies</div>
-                                                <div id="sectorInfoCompanies" class="text-xl font-bold text-orange-700">-</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mt-3 pt-3 border-t border-gray-200">
-                                            <button onclick="selectSectorFromHover()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition text-sm">
-                                                View Companies
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Left: Donut Chart -->
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Sector Allocation</h3>
+                            <div id="donutChart" class="flex justify-center">
+                                <!-- Donut chart will be rendered here -->
                             </div>
                         </div>
 
-                        <!-- Right: Sector Summary -->
-                        <div class="lg:col-span-7">
-                            <div class="bg-white rounded-xl border border-gray-200 p-4">
-                                <h3 class="text-lg font-bold text-gray-800 mb-4">Sector Overview</h3>
-                                <div class="overflow-x-auto max-h-96 overflow-y-auto">
-                                    <table class="w-full">
-                                        <thead class="bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">Sector</th>
-                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Weight</th>
-                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Change</th>
-                                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Companies</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="sectorSummaryTable">
-                                            <!-- Sectors will be inserted here -->
-                                        </tbody>
-                                    </table>
+                        <!-- Right: Info Card (Always Visible) -->
+                        <div id="hoverInfoCard" class="bg-white rounded-xl border-2 border-gray-200 transition-all duration-300 shadow-lg flex flex-col" style="min-height: 500px;">
+                            <!-- Default State -->
+                            <div id="defaultInfo" class="flex flex-col items-center justify-center flex-1 p-8 text-center">
+                                <div class="mb-4">
+                                    <svg class="w-20 h-20 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-400 mb-2">Sector Details</h3>
+                                <p class="text-sm text-gray-500">Hover over any sector on the chart to view detailed information and company breakdown</p>
+                            </div>
+
+                            <!-- Sector Info State -->
+                            <div id="sectorInfo" class="hidden flex-1 flex flex-col">
+                                <!-- Header -->
+                                <div class="p-5 border-b border-gray-200">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div id="sectorColorBox" class="w-5 h-5 rounded-full shadow-md" style="background: #3b82f6;"></div>
+                                        <h4 id="sectorInfoName" class="text-xl font-bold text-gray-800 flex-1">-</h4>
+                                    </div>
+                                    
+                                    <!-- Stats Grid -->
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2">
+                                            <div class="text-xs text-blue-600 font-medium">Weightage</div>
+                                            <div id="sectorInfoWeightage" class="text-lg font-bold text-blue-700">-</div>
+                                        </div>
+                                        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2">
+                                            <div class="text-xs text-green-600 font-medium">Change</div>
+                                            <div id="sectorInfoChange" class="text-lg font-bold">-</div>
+                                        </div>
+                                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2">
+                                            <div class="text-xs text-purple-600 font-medium">Volume</div>
+                                            <div id="sectorInfoVolume" class="text-xs font-bold text-purple-700">-</div>
+                                        </div>
+                                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2">
+                                            <div class="text-xs text-orange-600 font-medium">Market Value</div>
+                                            <div id="sectorInfoMarketValue" class="text-xs font-bold text-orange-700">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Companies Table -->
+                                <div class="flex-1 overflow-hidden flex flex-col p-4">
+                                    <h5 class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                        </svg>
+                                        Companies (<span id="companiesCount">0</span>)
+                                    </h5>
+                                    <div class="flex-1 overflow-y-auto border border-gray-200 rounded-lg">
+                                        <table class="w-full">
+                                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700">Symbol</th>
+                                                    <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700">Weight %</th>
+                                                    <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700">Change %</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="companiesTableBody" class="divide-y divide-gray-100">
+                                                <!-- Companies will be inserted here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Selected Sector Details -->
-                    <div id="sectorDetails" class="hidden">
-                        <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-xl font-bold text-gray-800" id="selectedSectorName">-</h3>
-                                <button onclick="clearSectorSelection()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-medium text-gray-700 transition">
-                                    Clear Selection
-                                </button>
-                            </div>
-
-                            <!-- Sector Stats -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                    <div class="text-xs text-gray-500 mb-1">Weightage</div>
-                                    <div class="text-xl font-bold text-blue-600" id="selectedSectorWeightage">-</div>
-                                </div>
-                                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                    <div class="text-xs text-gray-500 mb-1">Change</div>
-                                    <div class="text-xl font-bold" id="selectedSectorChange">-</div>
-                                </div>
-                                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                    <div class="text-xs text-gray-500 mb-1">Volume</div>
-                                    <div class="text-xl font-bold text-gray-800" id="selectedSectorVolume">-</div>
-                                </div>
-                                <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                    <div class="text-xs text-gray-500 mb-1">Market Value</div>
-                                    <div class="text-xl font-bold text-gray-800" id="selectedSectorMarketValue">-</div>
-                                </div>
-                            </div>
-
-                            <!-- Companies Table -->
-                            <h4 class="text-lg font-semibold text-gray-800 mb-3">Companies in this Sector</h4>
-                            <div class="overflow-x-auto">
-                                <table class="w-full">
-                                    <thead class="bg-gradient-to-r from-blue-50 to-indigo-50">
-                                        <tr>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">#</th>
-                                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700">Symbol</th>
-                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Weightage</th>
-                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Change</th>
-                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Volume</th>
-                                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700">Market Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="companiesTable">
-                                        <!-- Companies will be inserted here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                </div>
                 </div>
 
                 <!-- No Data State -->
@@ -510,9 +457,6 @@
 
             // Render donut chart
             createDonutChart();
-            
-            // Render sector summary table
-            renderSectorSummaryTable();
         }
 
         function createDonutChart() {
@@ -577,15 +521,10 @@
                     updateHoverInfo(d.data);
                 })
                 .on('mouseleave', function(event, d) {
-                    if (selectedSectorIndex !== d.data.index) {
-                        d3.select(this)
-                            .style('opacity', 1)
-                            .attr('stroke-width', 3);
-                    }
+                    d3.select(this)
+                        .style('opacity', 1)
+                        .attr('stroke-width', 3);
                     resetHoverInfo();
-                })
-                .on('click', function(event, d) {
-                    selectSector(d.data.index);
                 });
 
             // Add center text
@@ -713,10 +652,23 @@
             
             const changeEl = document.getElementById('sectorInfoChange');
             changeEl.textContent = `${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%`;
-            changeEl.className = `text-xl font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-700' : 'text-red-700'}`;
+            changeEl.className = `text-lg font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-700' : 'text-red-700'}`;
             
             document.getElementById('sectorInfoVolume').textContent = formatNumber(sector.sectorVolume);
-            document.getElementById('sectorInfoCompanies').textContent = sector.companies.length;
+            document.getElementById('sectorInfoMarketValue').textContent = `PKR ${formatNumber(sector.sectorMarketValue)}`;
+            document.getElementById('companiesCount').textContent = sector.companies.length;
+            
+            // Populate companies table
+            const tbody = document.getElementById('companiesTableBody');
+            tbody.innerHTML = sector.companies.map(company => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-3 py-2 text-sm font-semibold text-gray-800">${company.symbol}</td>
+                    <td class="px-3 py-2 text-sm text-right text-gray-700">${company.weightage.toFixed(2)}%</td>
+                    <td class="px-3 py-2 text-sm text-right font-semibold ${company.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${company.changePercent >= 0 ? '+' : ''}${company.changePercent.toFixed(2)}%
+                    </td>
+                </tr>
+            `).join('');
             
             const card = document.getElementById('hoverInfoCard');
             card.style.borderColor = data.color;
