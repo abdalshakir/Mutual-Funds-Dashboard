@@ -240,15 +240,59 @@
                 <!-- Donut Chart + Table Container -->
                 <div id="portfolioContainer" class="hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-                        <!-- Left: Donut Chart -->
+                        <!-- Left: Donut Chart + Info Card -->
                         <div class="lg:col-span-5">
-                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-                                <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Sector Allocation</h3>
-                                <div id="donutChart" class="flex justify-center">
-                                    <!-- Donut chart will be rendered here -->
+                            <div class="grid grid-cols-1 gap-4">
+                                <!-- Donut Chart -->
+                                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">Sector Allocation</h3>
+                                    <div id="donutChart" class="flex justify-center">
+                                        <!-- Donut chart will be rendered here -->
+                                    </div>
                                 </div>
-                                <div id="chartLegend" class="mt-4 max-h-64 overflow-y-auto">
-                                    <!-- Legend will be rendered here -->
+
+                                <!-- Hover Info Card -->
+                                <div id="hoverInfoCard" class="bg-white rounded-xl border-2 border-gray-200 p-5 transition-all duration-300">
+                                    <div id="defaultInfo" class="text-center py-4">
+                                        <div class="text-gray-400 mb-2">
+                                            <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500 font-medium">Hover over a sector to see details</p>
+                                    </div>
+
+                                    <div id="sectorInfo" class="hidden">
+                                        <div class="flex items-center gap-3 mb-4">
+                                            <div id="sectorColorBox" class="w-4 h-4 rounded" style="background: #3b82f6;"></div>
+                                            <h4 id="sectorInfoName" class="text-lg font-bold text-gray-800 flex-1">-</h4>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3">
+                                                <div class="text-xs text-blue-600 font-medium mb-1">Weightage</div>
+                                                <div id="sectorInfoWeightage" class="text-xl font-bold text-blue-700">-</div>
+                                            </div>
+                                            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3">
+                                                <div class="text-xs text-green-600 font-medium mb-1">Change</div>
+                                                <div id="sectorInfoChange" class="text-xl font-bold">-</div>
+                                            </div>
+                                            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3">
+                                                <div class="text-xs text-purple-600 font-medium mb-1">Volume</div>
+                                                <div id="sectorInfoVolume" class="text-sm font-bold text-purple-700">-</div>
+                                            </div>
+                                            <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3">
+                                                <div class="text-xs text-orange-600 font-medium mb-1">Companies</div>
+                                                <div id="sectorInfoCompanies" class="text-xl font-bold text-orange-700">-</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3 pt-3 border-t border-gray-200">
+                                            <button onclick="selectSectorFromHover()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition text-sm">
+                                                View Companies
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -452,6 +496,8 @@
         }
 
         let selectedSectorIndex = null;
+        let currentHoveredSector = null;
+        let currentHoveredSector = null;
 
         function renderSectors() {
             // Check if sectors data exists
@@ -469,51 +515,39 @@
             // Render sector summary table
             renderSectorSummaryTable();
         }
-
         function createDonutChart() {
-            const width = 500;  // Increased width for tooltip space
-            const height = 400;
-            const radius = Math.min(width, height) / 2 - 80; // More padding for tooltips
-            const innerRadius = radius * 0.6; // Donut hole
+            const width = 450;
+            const height = 450;
+            const radius = Math.min(width, height) / 2 - 20;
+            const innerRadius = radius * 0.6;
 
-            // Color scale
             const colors = [
                 '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
                 '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
                 '#f97316', '#6366f1', '#84cc16', '#a855f7'
             ];
 
-            // Prepare data
             const data = sunburstData.sectors.map((sector, i) => ({
                 name: sector.sector,
                 value: sector.sectorWeightage,
                 color: colors[i % colors.length],
-                index: i
+                index: i,
+                sectorData: sector
             }));
 
-            // Create pie generator
-            const pie = d3.pie()
-                .value(d => d.value)
-                .sort(null);
+            const pie = d3.pie().value(d => d.value).sort(null);
+            const arc = d3.arc().innerRadius(innerRadius).outerRadius(radius);
 
-            // Create arc generator (normal state - no expansion on hover)
-            const arc = d3.arc()
-                .innerRadius(innerRadius)
-                .outerRadius(radius);
-
-            // Clear previous chart
             d3.select('#donutChart').selectAll('*').remove();
 
-            // Create SVG with extra padding
             const svg = d3.select('#donutChart')
                 .append('svg')
                 .attr('viewBox', `0 0 ${width} ${height}`)
-                .style('max-width', '500px')
+                .style('max-width', '450px')
                 .style('height', 'auto')
                 .append('g')
                 .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
-            // Add slices first (so they're behind tooltip)
             const slices = svg.selectAll('path')
                 .data(pie(data))
                 .enter()
@@ -523,123 +557,36 @@
                 .attr('stroke', '#fff')
                 .attr('stroke-width', 3)
                 .style('cursor', 'pointer')
-                .style('transition', 'all 0.2s ease')
-                .on('mouseover', function(event, d) {
-                    // Highlight slice
-                    d3.select(this)
-                        .style('opacity', 0.8);
-                    
-                    // Calculate position
-                    const centroid = arc.centroid(d);
-                    const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-                    
-                    // Update tooltip text
-                    tooltip.select('.tooltip-name')
-                        .text(d.data.name.length > 30 ? d.data.name.substring(0, 27) + '...' : d.data.name);
-                    
-                    tooltip.select('.tooltip-percentage')
-                        .text(`${d.data.value.toFixed(2)}%`);
-                    
-                    // Calculate tooltip size with padding
-                    const nameWidth = tooltip.select('.tooltip-name').node().getComputedTextLength();
-                    const percentWidth = tooltip.select('.tooltip-percentage').node().getComputedTextLength();
-                    const maxWidth = Math.max(nameWidth, percentWidth);
-                    const paddingX = 16;
-                    const paddingY = 12;
-                    const tooltipWidth = maxWidth + (paddingX * 2);
-                    const tooltipHeight = 60;
-                    
-                    // Adjust position based on angle to prevent cutoff
-                    let xOffset = 0;
-                    let yOffset = 0;
-                    
-                    // Convert angle to degrees (0-360)
-                    const angle = (midAngle * 180 / Math.PI + 360) % 360;
-                    
-                    if (angle > 45 && angle < 135) {
-                        // Right side - shift tooltip left
-                        xOffset = -tooltipWidth / 2 - 20;
-                    } else if (angle > 225 && angle < 315) {
-                        // Left side - shift tooltip right
-                        xOffset = tooltipWidth / 2 + 20;
-                    }
-                    
-                    // Update background size and position
-                    tooltip.select('.tooltip-bg')
-                        .attr('x', -(maxWidth / 2) - paddingX)
-                        .attr('y', -28)
-                        .attr('width', tooltipWidth)
-                        .attr('height', tooltipHeight);
-                    
-                    // Position tooltip with offset
-                    tooltip
-                        .attr('transform', `translate(${centroid[0] + xOffset}, ${centroid[1] + yOffset})`)
-                        .style('display', null);
+                .style('transition', 'all 0.3s ease')
+                .on('mouseenter', function(event, d) {
+                    d3.select(this).style('opacity', 0.8).attr('stroke-width', 4);
+                    updateHoverInfo(d.data);
                 })
-                .on('mouseout', function(event, d) {
+                .on('mouseleave', function(event, d) {
                     if (selectedSectorIndex !== d.data.index) {
-                        d3.select(this)
-                            .style('opacity', 1);
+                        d3.select(this).style('opacity', 1).attr('stroke-width', 3);
                     }
-                    
-                    // Hide tooltip
-                    tooltip.style('display', 'none');
+                    resetHoverInfo();
                 })
                 .on('click', function(event, d) {
                     selectSector(d.data.index);
                 });
 
-            // Add center text
             svg.append('text')
                 .attr('text-anchor', 'middle')
                 .attr('dy', '-0.5em')
-                .style('font-size', '14px')
+                .style('font-size', '16px')
                 .style('font-weight', 'bold')
                 .style('fill', '#1f2937')
                 .text('Portfolio');
 
             svg.append('text')
                 .attr('text-anchor', 'middle')
-                .attr('dy', '1em')
-                .style('font-size', '12px')
+                .attr('dy', '1.2em')
+                .style('font-size', '14px')
                 .style('fill', '#6b7280')
                 .text('by Sector');
 
-            // Create tooltip group AFTER slices (so it appears on top)
-            const tooltip = svg.append('g')
-                .attr('class', 'tooltip')
-                .style('display', 'none')
-                .style('pointer-events', 'none');
-
-            // Tooltip background with gradient
-            tooltip.append('rect')
-                .attr('class', 'tooltip-bg')
-                .attr('rx', 8)
-                .attr('ry', 8)
-                .attr('fill', 'rgba(255, 255, 255, 0.98)')
-                .attr('stroke', '#3b82f6')
-                .attr('stroke-width', 2)
-                .style('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))');
-
-            // Tooltip sector name
-            tooltip.append('text')
-                .attr('class', 'tooltip-name')
-                .attr('text-anchor', 'middle')
-                .attr('dy', '-0.3em')
-                .style('font-size', '13px')
-                .style('font-weight', 'bold')
-                .style('fill', '#1f2937');
-
-            // Tooltip percentage
-            tooltip.append('text')
-                .attr('class', 'tooltip-percentage')
-                .attr('text-anchor', 'middle')
-                .attr('dy', '1.5em')
-                .style('font-size', '18px')
-                .style('font-weight', 'bold')
-                .style('fill', '#3b82f6');
-
-            // Animation
             slices.transition()
                 .duration(800)
                 .attrTween('d', function(d) {
@@ -649,33 +596,47 @@
                         return arc(d);
                     };
                 });
-
-            // Render legend
-            renderLegend(data);
         }
 
-        function renderLegend(data) {
-            const legend = d3.select('#chartLegend');
-            legend.selectAll('*').remove();
+        function updateHoverInfo(data) {
+            currentHoveredSector = data.index;
+            const sector = data.sectorData;
+            
+            document.getElementById('defaultInfo').classList.add('hidden');
+            document.getElementById('sectorInfo').classList.remove('hidden');
+            
+            document.getElementById('sectorColorBox').style.background = data.color;
+            document.getElementById('sectorInfoName').textContent = sector.sector;
+            document.getElementById('sectorInfoWeightage').textContent = `${sector.sectorWeightage.toFixed(2)}%`;
+            
+            const changeEl = document.getElementById('sectorInfoChange');
+            changeEl.textContent = `${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%`;
+            changeEl.className = `text-xl font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-700' : 'text-red-700'}`;
+            
+            document.getElementById('sectorInfoVolume').textContent = formatNumber(sector.sectorVolume);
+            document.getElementById('sectorInfoCompanies').textContent = sector.companies.length;
+            
+            const card = document.getElementById('hoverInfoCard');
+            card.style.borderColor = data.color;
+            card.style.borderWidth = '3px';
+        }
 
-            const items = legend.selectAll('div')
-                .data(data)
-                .enter()
-                .append('div')
-                .attr('class', 'legend-item flex items-center gap-3 p-2 rounded-lg')
-                .style('cursor', 'pointer')
-                .on('click', (event, d) => selectSector(d.index));
+        function resetHoverInfo() {
+            currentHoveredSector = null;
+            document.getElementById('defaultInfo').classList.remove('hidden');
+            document.getElementById('sectorInfo').classList.add('hidden');
+            const card = document.getElementById('hoverInfoCard');
+            card.style.borderColor = '#e5e7eb';
+            card.style.borderWidth = '2px';
+        }
 
-            items.append('div')
-                .style('width', '16px')
-                .style('height', '16px')
-                .style('border-radius', '4px')
-                .style('background-color', d => d.color)
-                .style('flex-shrink', '0');
+        function selectSectorFromHover() {
+            if (currentHoveredSector !== null) {
+                selectSector(currentHoveredSector);
+            }
+        }
 
-            items.append('div')
-                .attr('class', 'flex-1')
-                .html(d => `
+
                     <div class="text-sm font-medium text-gray-800 truncate">${d.name}</div>
                     <div class="text-xs text-gray-500">${d.value.toFixed(2)}%</div>
                 `);
