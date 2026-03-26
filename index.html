@@ -697,7 +697,11 @@
                 
                 const data = await response.json();
                 
-                if (data.success && data.response) {
+                console.log('API Response:', data);
+                console.log('Response type:', typeof data.response);
+                console.log('Is array?:', Array.isArray(data.response));
+                
+                if (data.success && data.response && Array.isArray(data.response)) {
                     allFunds = data.response;
                     totalItems = data.totalItems || 0;
                     totalPages = data.totalPages || 1;
@@ -706,7 +710,8 @@
                     updateStats();
                     updatePagination(totalItems);
                 } else {
-                    throw new Error('Unexpected response structure');
+                    console.error('Invalid response structure:', data);
+                    throw new Error('API returned invalid data structure');
                 }
             } catch (error) {
                 console.error('Error loading funds:', error);
