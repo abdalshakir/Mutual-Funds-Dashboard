@@ -471,9 +471,9 @@
         }
 
         function createDonutChart() {
-            const width = 350;
-            const height = 350;
-            const radius = Math.min(width, height) / 2;
+            const width = 400;
+            const height = 400;
+            const radius = Math.min(width, height) / 2 - 20; // Add padding for hover effect
             const innerRadius = radius * 0.6; // Donut hole
 
             // Color scale
@@ -496,23 +496,19 @@
                 .value(d => d.value)
                 .sort(null);
 
-            // Create arc generator
+            // Create arc generator (normal state - no expansion on hover)
             const arc = d3.arc()
                 .innerRadius(innerRadius)
                 .outerRadius(radius);
 
-            const arcHover = d3.arc()
-                .innerRadius(innerRadius)
-                .outerRadius(radius + 10);
-
             // Clear previous chart
             d3.select('#donutChart').selectAll('*').remove();
 
-            // Create SVG
+            // Create SVG with extra padding
             const svg = d3.select('#donutChart')
                 .append('svg')
                 .attr('viewBox', `0 0 ${width} ${height}`)
-                .style('max-width', '350px')
+                .style('max-width', '400px')
                 .style('height', 'auto')
                 .append('g')
                 .attr('transform', `translate(${width / 2}, ${height / 2})`);
@@ -527,23 +523,93 @@
                 .attr('stroke', '#fff')
                 .attr('stroke-width', 3)
                 .style('cursor', 'pointer')
+                .style('transition', 'all 0.2s ease')
                 .on('mouseover', function(event, d) {
+                    // Just change opacity, no size change
                     d3.select(this)
-                        .transition()
-                        .duration(200)
-                        .attr('d', arcHover);
+                        .style('opacity', 0.8);
                 })
                 .on('mouseout', function(event, d) {
                     if (selectedSectorIndex !== d.data.index) {
                         d3.select(this)
-                            .transition()
-                            .duration(200)
-                            .attr('d', arc);
+                            .style('opacity', 1);
                     }
                 })
                 .on('click', function(event, d) {
                     selectSector(d.data.index);
                 });
+
+            // Add sector labels on the donut chart
+            svg.selectAll('text.sector-label')
+                .data(pie(data))
+                .enter()
+                .append('text')
+                .attr('class', 'sector-label')
+                .attr('transform', d => {
+                    const pos = arc.centroid(d);
+                    // Move label outward for better readability
+                    const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+                    pos[0] = Math.cos(midAngle - Math.PI / 2) * (radius * 0.8);
+                    pos[1] = Math.sin(midAngle - Math.PI / 2) * (radius * 0.8);
+                    return `translate(${pos})`;
+                })
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.35em')
+                .style('font-size', '11px')
+                .style('font-weight', 'bold')
+                .style('fill', '#fff')
+                .style('pointer-events', 'none')
+                .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.5)')
+                .each(function(d) {
+                    const text = d3.select(this);
+                    const name = d.data.name;
+                    
+                    // For long sector names, split into multiple lines
+                    if (name.length > 25) {
+                        const words = name.split(' ');
+                        let line1 = '';
+                        let line2 = '';
+                        
+                        words.forEach((word, i) => {
+                            if (i < words.length / 2) {
+                                line1 += word + ' ';
+                            } else {
+                                line2 += word + ' ';
+                            }
+                        });
+                        
+                        text.append('tspan')
+                            .attr('x', 0)
+                            .attr('dy', '-0.6em')
+                            .text(line1.trim().substring(0, 15) + (line1.trim().length > 15 ? '...' : ''));
+                        
+                        text.append('tspan')
+                            .attr('x', 0)
+                            .attr('dy', '1.2em')
+                            .text(line2.trim().substring(0, 15) + (line2.trim().length > 15 ? '...' : ''));
+                    } else {
+                        text.text(name.substring(0, 20));
+                    }
+                });
+
+            // Add percentage labels on the donut chart
+            svg.selectAll('text.percentage-label')
+                .data(pie(data))
+                .enter()
+                .append('text')
+                .attr('class', 'percentage-label')
+                .attr('transform', d => {
+                    const pos = arc.centroid(d);
+                    return `translate(${pos})`;
+                })
+                .attr('text-anchor', 'middle')
+                .attr('dy', '0.35em')
+                .style('font-size', '10px')
+                .style('font-weight', 'bold')
+                .style('fill', '#fff')
+                .style('pointer-events', 'none')
+                .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.5)')
+                .text(d => `${d.data.value.toFixed(1)}%`);
 
             // Add center text
             svg.append('text')
