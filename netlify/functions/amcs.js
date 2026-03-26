@@ -15,19 +15,12 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // Get query parameters from the request
-    const queryParams = event.queryStringParameters || {};
+    const apiUrl = 'https://beta-restapi.sarmaaya.pk/api/mutual-funds/amcs-list';
     
-    // Build the API URL with query parameters
-    const apiUrl = new URL('https://beta-restapi.sarmaaya.pk/api/mutual-funds');
-    Object.keys(queryParams).forEach(key => {
-      apiUrl.searchParams.append(key, queryParams[key]);
-    });
-
-    console.log('Fetching from:', apiUrl.toString());
+    console.log('Fetching AMCs from:', apiUrl);
 
     // Fetch from the actual API
-    const response = await fetch(apiUrl.toString());
+    const response = await fetch(apiUrl);
     const data = await response.json();
 
     return {
@@ -36,7 +29,7 @@ exports.handler = async function(event, context) {
       body: JSON.stringify(data)
     };
   } catch (error) {
-    console.error('Error fetching mutual funds:', error);
+    console.error('Error fetching AMCs:', error);
     return {
       statusCode: 500,
       headers,
