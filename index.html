@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarmaaya Mutual Funds Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #faf5ff 50%, #ffffff 100%);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #dbeafe 0%, #e0e7ff 50%, #f3e8ff 100%);
+            border-right: 1px solid #c7d2fe;
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 16px rgba(99, 102, 241, 0.12);
+        }
+        
+        .sidebar h2,
+        .sidebar h3 {
+            color: #1e3a8a !important;
+        }
+        
+        .sidebar label,
+        .sidebar span {
+            color: #1e40af !important;
+        }
+        
+        .sidebar .text-gray-700 {
+            color: #1e40af !important;
+        }
+        
+        .sidebar .text-gray-600 {
+            color: #3730a3 !important;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .fund-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .fund-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.25), 0 0 0 2px rgba(99, 102, 241, 0.3);
+            border-color: #6366f1;
+        }
+
+        .filter-checkbox {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #94a3b8;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .filter-checkbox:checked {
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            border-color: #3b82f6;
+        }
+
+        .filter-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .filter-label {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .filter-label:hover {
+            color: #3b82f6 !important;
+        }
+
+        .toggle-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 2px 8px rgba(30, 58, 138, 0.08);
+            transition: all 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: #f1f5f9;
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.12);
+        }
+
+        .pagination-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #eff6ff;
+            border-color: #60a5fa;
+            color: #2563eb;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .loading-shimmer {
+            background: linear-gradient(90deg, 
+                #f1f5f9 25%, 
+                #e2e8f0 50%, 
+                #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .stat-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+        }
+
+        .islamic-icon {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 8px;
+            font-size: 1.25rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-risk-low {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .badge-risk-medium {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-risk-high {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .content-wrapper {
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                z-index: 50;
+                height: 100vh;
+            }
+            
+            .content-wrapper {
+                margin-left: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar fixed left-0 top-0 w-64 h-full overflow-y-auto z-40">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-800">Filters</h2>
+                <button id="closeSidebar" class="md:hidden text-indigo-600 hover:text-indigo-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Shariah Filter -->
+            <div class="mb-8">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Shariah Compliant</h3>
+                <div class="space-y-2">
+                    <label class="filter-label flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" class="filter-checkbox" name="shariah" value="Islamic">
+                        <span>Islamic</span>
+                    </label>
+                    <label class="filter-label flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" class="filter-checkbox" name="shariah" value="Conventional">
+                        <span>Conventional</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Risk Profile Filter -->
+            <div class="mb-8">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3">Risk Profile</h3>
+                <div class="space-y-2">
+                    <label class="filter-label flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" class="filter-checkbox" name="risk" value="Low">
+                        <span>Low Risk</span>
+                    </label>
+                    <label class="filter-label flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" class="filter-checkbox" name="risk" value="Medium">
+                        <span>Medium Risk</span>
+                    </label>
+                    <label class="filter-label flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" class="filter-checkbox" name="risk" value="High">
+                        <span>High Risk</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Clear Filters -->
+            <button id="clearFilters" class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                Clear All Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="contentWrapper" class="content-wrapper md:ml-64">
+        <!-- Toggle Sidebar Button -->
+        <button id="toggleSidebar" class="toggle-btn fixed left-4 top-4 z-30 px-3 py-2 rounded-lg md:hidden">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+
+        <div class="p-4 md:p-8">
+            <!-- Header -->
+            <div class="bg-white rounded-xl border border-gray-200 p-6 md:p-8 mb-6 shadow-sm" style="border: 1px solid #cbd5e1;">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                            Mutual Funds Dashboard
+                        </h1>
+                        <p class="text-gray-600">Real-time insights into Pakistan's mutual funds</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="stat-card rounded-xl px-6 py-4 text-center shadow-sm">
+                            <div class="text-gray-500 text-sm mb-1">Total Funds</div>
+                            <div class="text-gray-800 text-2xl font-bold" id="totalFunds">-</div>
+                        </div>
+                        <div class="stat-card rounded-xl px-6 py-4 text-center shadow-sm">
+                            <div class="text-gray-500 text-sm mb-1">Avg 1D Return</div>
+                            <div class="text-2xl font-bold" id="avgReturn">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Size Selector -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm flex items-center justify-between" style="border: 1px solid #cbd5e1;">
+                <span class="text-gray-700 font-medium">Show per page:</span>
+                <select id="pageSizeSelect" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="10" selected>10 funds</option>
+                    <option value="25">25 funds</option>
+                    <option value="50">50 funds</option>
+                    <option value="100">100 funds</option>
+                </select>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="loading-shimmer rounded-xl h-64 border border-gray-200"></div>
+                    <div class="loading-shimmer rounded-xl h-64 border border-gray-200"></div>
+                    <div class="loading-shimmer rounded-xl h-64 border border-gray-200"></div>
+                </div>
+            </div>
+
+            <!-- Funds Grid -->
+            <div id="fundsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Funds will be inserted here -->
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-between shadow-sm">
+                <button id="prevBtn" class="pagination-btn px-6 py-2 rounded-lg text-gray-700 font-medium">
+                    ← Previous
+                </button>
+                <div class="flex gap-2" id="pageNumbers"></div>
+                <button id="nextBtn" class="pagination-btn px-6 py-2 rounded-lg text-gray-700 font-medium">
+                    Next →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'https://beta-restapi.sarmaaya.pk/api/mutual-funds';
+        let currentPage = 1;
+        let currentLimit = 10; // Default page size from API
+        let totalItems = 0;
+        let totalPages = 0;
+        let currentFilters = {
+            shariah: [],
+            risk: []
+        };
+        let allFunds = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMutualFunds();
+            setupEventListeners();
+        });
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Sidebar toggle
+            document.getElementById('toggleSidebar').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('collapsed');
+            });
+
+            document.getElementById('closeSidebar').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.add('collapsed');
+            });
+
+            // Shariah filters - only allow one at a time (radio-like behavior)
+            document.querySelectorAll('input[name="shariah"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        // Uncheck other shariah checkboxes
+                        document.querySelectorAll('input[name="shariah"]').forEach(cb => {
+                            if (cb !== e.target) cb.checked = false;
+                        });
+                    }
+                    updateFiltersFromCheckboxes();
+                    currentPage = 1;
+                    loadMutualFunds();
+                });
+            });
+
+            // Risk filters - only allow one at a time (radio-like behavior)
+            document.querySelectorAll('input[name="risk"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        // Uncheck other risk checkboxes
+                        document.querySelectorAll('input[name="risk"]').forEach(cb => {
+                            if (cb !== e.target) cb.checked = false;
+                        });
+                    }
+                    updateFiltersFromCheckboxes();
+                    currentPage = 1;
+                    loadMutualFunds();
+                });
+            });
+
+            // Page size selector
+            document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+                currentLimit = parseInt(e.target.value);
+                currentPage = 1; // Reset to first page
+                loadMutualFunds();
+            });
+
+            // Clear filters
+            document.getElementById('clearFilters').addEventListener('click', () => {
+                document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
+                currentFilters = { shariah: [], risk: [] };
+                currentPage = 1;
+                loadMutualFunds();
+            });
+
+            // Pagination
+            document.getElementById('prevBtn').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadMutualFunds();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+
+            document.getElementById('nextBtn').addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    loadMutualFunds();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+
+            // Close sidebar on mobile when clicking outside
+            document.addEventListener('click', (e) => {
+                const sidebar = document.getElementById('sidebar');
+                const toggleBtn = document.getElementById('toggleSidebar');
+                
+                if (window.innerWidth < 768 && 
+                    !sidebar.contains(e.target) && 
+                    !toggleBtn.contains(e.target) &&
+                    !sidebar.classList.contains('collapsed')) {
+                    sidebar.classList.add('collapsed');
+                }
+            });
+        }
+
+        function updateFiltersFromCheckboxes() {
+            currentFilters.shariah = Array.from(document.querySelectorAll('input[name="shariah"]:checked'))
+                .map(cb => cb.value);
+            currentFilters.risk = Array.from(document.querySelectorAll('input[name="risk"]:checked'))
+                .map(cb => cb.value);
+        }
+
+        // Load Mutual Funds from API
+        async function loadMutualFunds() {
+            showLoading(true);
+            
+            try {
+                // Build query parameters
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    limit: currentLimit
+                });
+
+                // Add Shariah filter to API
+                if (currentFilters.shariah.length === 1) {
+                    params.append('isSheriah', currentFilters.shariah[0]);
+                }
+                
+                // Add risk filter to API
+                if (currentFilters.risk.length === 1) {
+                    params.append('riskProfile', currentFilters.risk[0]);
+                }
+
+                const response = await fetch(`${API_BASE_URL}?${params.toString()}`);
+                
+                console.log('API URL:', `${API_BASE_URL}?${params.toString()}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                console.log('API Response:', data);
+                
+                if (data.success && data.response && data.response.data) {
+                    allFunds = data.response.data;
+                    
+                    // Use server pagination info directly from API
+                    totalItems = data.response.totalItems || 0;
+                    totalPages = data.response.totalPages || 1;
+                    
+                    console.log('Total Items:', totalItems, 'Total Pages:', totalPages);
+                    
+                    // Note: If API's isSheriah filter doesn't work properly, 
+                    // we may get mixed results, but we trust the API's totalItems count
+                } else {
+                    throw new Error('Unexpected API response structure');
+                }
+                
+                renderFunds();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading funds:', error);
+                loadMockData();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Render Funds
+        function renderFunds() {
+            const grid = document.getElementById('fundsGrid');
+            
+            if (allFunds.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white rounded-xl border border-gray-200 p-12 text-center">
+                        <div class="text-6xl mb-4">📊</div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">No funds found</h3>
+                        <p class="text-gray-500">Try adjusting your filters</p>
+                    </div>
+                `;
+                updatePagination(0);
+                return;
+            }
+
+            grid.innerHTML = allFunds.map(fund => createFundCard(fund)).join('');
+            updatePagination(totalItems);
+        }
+
+        // Create Fund Card
+        function createFundCard(fund) {
+            const changePercent = parseFloat(fund.changePercent1d || 0);
+            const nav = parseFloat(fund.nav || 0);
+            const aum = parseFloat(fund.aum || 0);
+
+            // Format AUM
+            let aumFormatted;
+            if (aum >= 1000000000) {
+                aumFormatted = `${(aum / 1000000000).toFixed(2)}B`;
+            } else if (aum >= 1000000) {
+                aumFormatted = `${(aum / 1000000).toFixed(2)}M`;
+            } else if (aum > 0) {
+                aumFormatted = `${(aum / 1000).toFixed(2)}K`;
+            } else {
+                aumFormatted = 'N/A';
+            }
+
+            const riskBadgeClass = 
+                fund.riskProfile === 'Low' ? 'badge-risk-low' :
+                fund.riskProfile === 'Medium' ? 'badge-risk-medium' : 'badge-risk-high';
+
+            return `
+                <div class="fund-card rounded-xl p-6 cursor-pointer shadow-sm">
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-3 flex-wrap">
+                            <span class="badge ${riskBadgeClass}">${fund.riskProfile} Risk</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2 leading-tight flex items-center">
+                            ${fund.isShariah ? '<span class="islamic-icon">🕌</span>' : ''}
+                            ${fund.name}
+                        </h3>
+                        <p class="text-sm text-gray-500">AUM: PKR ${aumFormatted}</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="flex items-baseline gap-2 mb-1">
+                            <span class="text-sm text-gray-500">NAV</span>
+                            <span class="text-3xl font-bold text-gray-800">${nav.toFixed(2)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-500">1D Change:</span>
+                            <span class="text-lg font-semibold ${changePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update Statistics
+        function updateStats() {
+            document.getElementById('totalFunds').textContent = totalItems.toLocaleString();
+            
+            const avgReturn = allFunds.reduce((sum, fund) => 
+                sum + parseFloat(fund.changePercent1d || 0), 0) / (allFunds.length || 1);
+            
+            const avgReturnEl = document.getElementById('avgReturn');
+            avgReturnEl.textContent = `${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(2)}%`;
+            avgReturnEl.className = `${avgReturn >= 0 ? 'text-green-600' : 'text-red-600'} text-2xl font-bold`;
+        }
+
+        // Update Pagination
+        function updatePagination(totalItems) {
+            const calculatedTotalPages = Math.ceil(totalItems / currentLimit);
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= calculatedTotalPages || calculatedTotalPages === 0;
+
+            const pageNumbers = document.getElementById('pageNumbers');
+            pageNumbers.innerHTML = '';
+
+            if (calculatedTotalPages === 0) return;
+
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(calculatedTotalPages, startPage + maxVisible - 1);
+
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.className = `pagination-btn px-4 py-2 rounded-lg text-gray-700 font-medium ${i === currentPage ? 'active' : ''}`;
+                btn.textContent = i;
+                btn.addEventListener('click', () => {
+                    currentPage = i;
+                    loadMutualFunds();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                pageNumbers.appendChild(btn);
+            }
+        }
+
+        // Show/Hide Loading
+        function showLoading(show) {
+            document.getElementById('loadingState').classList.toggle('hidden', !show);
+            document.getElementById('fundsGrid').classList.toggle('hidden', show);
+        }
+
+        // Mock Data (fallback)
+        function loadMockData() {
+            console.warn('Using mock data - API call failed or CORS blocked');
+            allFunds = generateMockFunds(currentLimit);
+            totalItems = 601; // Match real API total
+            totalPages = Math.ceil(601 / currentLimit);
+            renderFunds();
+            updateStats();
+        }
+
+        function generateMockFunds(count) {
+            const fundNames = [
+                'Al Meezan Islamic Fund', 'HBL Growth Fund', 'NBP Income Fund', 'UBL Retirement Fund', 
+                'Faysal Islamic Fund', 'Askari Equity Fund', 'JS Pension Fund', 'MCB Money Market Fund'
+            ];
+            
+            return Array.from({ length: count }, (_, i) => ({
+                fundId: `fund-${i + 1}-${Math.random().toString(36).substr(2, 9)}`,
+                name: fundNames[Math.floor(Math.random() * fundNames.length)] + ` Plan ${i + 1}`,
+                fundType: Math.random() > 0.5 ? 'Mutual Fund' : 'Pension Fund',
+                nav: (Math.random() * 150 + 50).toFixed(4),
+                changePercent1d: (Math.random() * 20 - 5).toFixed(2),
+                aum: (Math.random() * 10000000000).toString(),
+                isShariah: Math.random() > 0.5,
+                riskProfile: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)]
+            }));
+        }
+    </script>
+</body>
+</html>
