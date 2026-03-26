@@ -809,13 +809,19 @@
                 fund.riskProfile === 'Low' ? 'badge-risk-low' :
                 fund.riskProfile === 'Medium' ? 'badge-risk-medium' : 'badge-risk-high';
 
+            // Encode fund data for passing to details page
+            const fundDataEncoded = encodeURIComponent(JSON.stringify(fund));
+
             return `
                 <tr class="border-b border-gray-100">
                     <td class="px-6 py-4 text-gray-600 font-medium">${index}</td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             ${fund.isShariah ? '<span class="text-lg">🕌</span>' : ''}
-                            <span class="font-semibold text-gray-800">${fund.name}</span>
+                            <a href="fund-details.html?fundId=${fund.fundId}&fund=${fundDataEncoded}" 
+                               class="font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition">
+                                ${fund.name}
+                            </a>
                         </div>
                     </td>
                     <td class="px-6 py-4">
