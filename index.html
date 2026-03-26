@@ -698,13 +698,11 @@
                 const data = await response.json();
                 
                 console.log('API Response:', data);
-                console.log('Response type:', typeof data.response);
-                console.log('Is array?:', Array.isArray(data.response));
                 
-                if (data.success && data.response && Array.isArray(data.response)) {
-                    allFunds = data.response;
-                    totalItems = data.totalItems || 0;
-                    totalPages = data.totalPages || 1;
+                if (data.success && data.response && data.response.data && Array.isArray(data.response.data)) {
+                    allFunds = data.response.data;
+                    totalItems = data.response.totalItems || 0;
+                    totalPages = data.response.totalPages || 1;
                     
                     renderFunds();
                     updateStats();
