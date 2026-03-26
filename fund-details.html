@@ -471,9 +471,9 @@
         }
 
         function createDonutChart() {
-            const width = 400;
+            const width = 500;  // Increased width for tooltip space
             const height = 400;
-            const radius = Math.min(width, height) / 2 - 20; // Add padding for hover effect
+            const radius = Math.min(width, height) / 2 - 80; // More padding for tooltips
             const innerRadius = radius * 0.6; // Donut hole
 
             // Color scale
@@ -508,7 +508,7 @@
             const svg = d3.select('#donutChart')
                 .append('svg')
                 .attr('viewBox', `0 0 ${width} ${height}`)
-                .style('max-width', '400px')
+                .style('max-width', '500px')
                 .style('height', 'auto')
                 .append('g')
                 .attr('transform', `translate(${width / 2}, ${height / 2})`);
@@ -529,8 +529,9 @@
                     d3.select(this)
                         .style('opacity', 0.8);
                     
-                    // Show tooltip
+                    // Calculate position
                     const centroid = arc.centroid(d);
+                    const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
                     
                     // Update tooltip text
                     tooltip.select('.tooltip-name')
@@ -543,19 +544,36 @@
                     const nameWidth = tooltip.select('.tooltip-name').node().getComputedTextLength();
                     const percentWidth = tooltip.select('.tooltip-percentage').node().getComputedTextLength();
                     const maxWidth = Math.max(nameWidth, percentWidth);
-                    
-                    // Update background size and position with padding
                     const paddingX = 16;
                     const paddingY = 12;
+                    const tooltipWidth = maxWidth + (paddingX * 2);
+                    const tooltipHeight = 60;
+                    
+                    // Adjust position based on angle to prevent cutoff
+                    let xOffset = 0;
+                    let yOffset = 0;
+                    
+                    // Convert angle to degrees (0-360)
+                    const angle = (midAngle * 180 / Math.PI + 360) % 360;
+                    
+                    if (angle > 45 && angle < 135) {
+                        // Right side - shift tooltip left
+                        xOffset = -tooltipWidth / 2 - 20;
+                    } else if (angle > 225 && angle < 315) {
+                        // Left side - shift tooltip right
+                        xOffset = tooltipWidth / 2 + 20;
+                    }
+                    
+                    // Update background size and position
                     tooltip.select('.tooltip-bg')
                         .attr('x', -(maxWidth / 2) - paddingX)
                         .attr('y', -28)
-                        .attr('width', maxWidth + (paddingX * 2))
-                        .attr('height', 60);
+                        .attr('width', tooltipWidth)
+                        .attr('height', tooltipHeight);
                     
-                    // Position tooltip at centroid
+                    // Position tooltip with offset
                     tooltip
-                        .attr('transform', `translate(${centroid[0]}, ${centroid[1]})`)
+                        .attr('transform', `translate(${centroid[0] + xOffset}, ${centroid[1] + yOffset})`)
                         .style('display', null);
                 })
                 .on('mouseout', function(event, d) {
