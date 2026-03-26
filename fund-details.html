@@ -497,7 +497,6 @@
 
         let selectedSectorIndex = null;
         let currentHoveredSector = null;
-        let currentHoveredSector = null;
 
         function renderSectors() {
             // Check if sectors data exists
@@ -515,18 +514,21 @@
             // Render sector summary table
             renderSectorSummaryTable();
         }
+
         function createDonutChart() {
             const width = 450;
             const height = 450;
             const radius = Math.min(width, height) / 2 - 20;
             const innerRadius = radius * 0.6;
 
+            // Color scale
             const colors = [
                 '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
                 '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
                 '#f97316', '#6366f1', '#84cc16', '#a855f7'
             ];
 
+            // Prepare data
             const data = sunburstData.sectors.map((sector, i) => ({
                 name: sector.sector,
                 value: sector.sectorWeightage,
@@ -535,11 +537,20 @@
                 sectorData: sector
             }));
 
-            const pie = d3.pie().value(d => d.value).sort(null);
-            const arc = d3.arc().innerRadius(innerRadius).outerRadius(radius);
+            // Create pie generator
+            const pie = d3.pie()
+                .value(d => d.value)
+                .sort(null);
 
+            // Create arc generator
+            const arc = d3.arc()
+                .innerRadius(innerRadius)
+                .outerRadius(radius);
+
+            // Clear previous chart
             d3.select('#donutChart').selectAll('*').remove();
 
+            // Create SVG
             const svg = d3.select('#donutChart')
                 .append('svg')
                 .attr('viewBox', `0 0 ${width} ${height}`)
@@ -548,6 +559,7 @@
                 .append('g')
                 .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
+            // Add slices
             const slices = svg.selectAll('path')
                 .data(pie(data))
                 .enter()
@@ -559,12 +571,16 @@
                 .style('cursor', 'pointer')
                 .style('transition', 'all 0.3s ease')
                 .on('mouseenter', function(event, d) {
-                    d3.select(this).style('opacity', 0.8).attr('stroke-width', 4);
+                    d3.select(this)
+                        .style('opacity', 0.8)
+                        .attr('stroke-width', 4);
                     updateHoverInfo(d.data);
                 })
                 .on('mouseleave', function(event, d) {
                     if (selectedSectorIndex !== d.data.index) {
-                        d3.select(this).style('opacity', 1).attr('stroke-width', 3);
+                        d3.select(this)
+                            .style('opacity', 1)
+                            .attr('stroke-width', 3);
                     }
                     resetHoverInfo();
                 })
@@ -572,6 +588,7 @@
                     selectSector(d.data.index);
                 });
 
+            // Add center text
             svg.append('text')
                 .attr('text-anchor', 'middle')
                 .attr('dy', '-0.5em')
@@ -587,6 +604,7 @@
                 .style('fill', '#6b7280')
                 .text('by Sector');
 
+            // Animation
             slices.transition()
                 .duration(800)
                 .attrTween('d', function(d) {
@@ -598,48 +616,8 @@
                 });
         }
 
-        function updateHoverInfo(data) {
-            currentHoveredSector = data.index;
-            const sector = data.sectorData;
-            
-            document.getElementById('defaultInfo').classList.add('hidden');
-            document.getElementById('sectorInfo').classList.remove('hidden');
-            
-            document.getElementById('sectorColorBox').style.background = data.color;
-            document.getElementById('sectorInfoName').textContent = sector.sector;
-            document.getElementById('sectorInfoWeightage').textContent = `${sector.sectorWeightage.toFixed(2)}%`;
-            
-            const changeEl = document.getElementById('sectorInfoChange');
-            changeEl.textContent = `${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%`;
-            changeEl.className = `text-xl font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-700' : 'text-red-700'}`;
-            
-            document.getElementById('sectorInfoVolume').textContent = formatNumber(sector.sectorVolume);
-            document.getElementById('sectorInfoCompanies').textContent = sector.companies.length;
-            
-            const card = document.getElementById('hoverInfoCard');
-            card.style.borderColor = data.color;
-            card.style.borderWidth = '3px';
-        }
-
-        function resetHoverInfo() {
-            currentHoveredSector = null;
-            document.getElementById('defaultInfo').classList.remove('hidden');
-            document.getElementById('sectorInfo').classList.add('hidden');
-            const card = document.getElementById('hoverInfoCard');
-            card.style.borderColor = '#e5e7eb';
-            card.style.borderWidth = '2px';
-        }
-
-        function selectSectorFromHover() {
-            if (currentHoveredSector !== null) {
-                selectSector(currentHoveredSector);
-            }
-        }
-
-
-                    <div class="text-sm font-medium text-gray-800 truncate">${d.name}</div>
-                    <div class="text-xs text-gray-500">${d.value.toFixed(2)}%</div>
-                `);
+        function renderLegend(data) {
+            // Legend removed - info card replaces it
         }
 
         function renderSectorSummaryTable() {
@@ -720,6 +698,44 @@
             document.getElementById('sectorDetails').classList.add('hidden');
             document.querySelectorAll('.sector-row').forEach(row => row.classList.remove('selected'));
             document.querySelectorAll('.legend-item').forEach(item => item.classList.remove('selected'));
+        }
+
+        function updateHoverInfo(data) {
+            currentHoveredSector = data.index;
+            const sector = data.sectorData;
+            
+            document.getElementById('defaultInfo').classList.add('hidden');
+            document.getElementById('sectorInfo').classList.remove('hidden');
+            
+            document.getElementById('sectorColorBox').style.background = data.color;
+            document.getElementById('sectorInfoName').textContent = sector.sector;
+            document.getElementById('sectorInfoWeightage').textContent = `${sector.sectorWeightage.toFixed(2)}%`;
+            
+            const changeEl = document.getElementById('sectorInfoChange');
+            changeEl.textContent = `${sector.sectorChangePercent >= 0 ? '+' : ''}${sector.sectorChangePercent.toFixed(2)}%`;
+            changeEl.className = `text-xl font-bold ${sector.sectorChangePercent >= 0 ? 'text-green-700' : 'text-red-700'}`;
+            
+            document.getElementById('sectorInfoVolume').textContent = formatNumber(sector.sectorVolume);
+            document.getElementById('sectorInfoCompanies').textContent = sector.companies.length;
+            
+            const card = document.getElementById('hoverInfoCard');
+            card.style.borderColor = data.color;
+            card.style.borderWidth = '3px';
+        }
+
+        function resetHoverInfo() {
+            currentHoveredSector = null;
+            document.getElementById('defaultInfo').classList.remove('hidden');
+            document.getElementById('sectorInfo').classList.add('hidden');
+            const card = document.getElementById('hoverInfoCard');
+            card.style.borderColor = '#e5e7eb';
+            card.style.borderWidth = '2px';
+        }
+
+        function selectSectorFromHover() {
+            if (currentHoveredSector !== null) {
+                selectSector(currentHoveredSector);
+            }
         }
 
         function formatNumber(num) {
