@@ -513,6 +513,39 @@
                 .append('g')
                 .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
+            // Create tooltip group (hidden by default)
+            const tooltip = svg.append('g')
+                .attr('class', 'tooltip')
+                .style('display', 'none')
+                .style('pointer-events', 'none');
+
+            // Tooltip background
+            tooltip.append('rect')
+                .attr('class', 'tooltip-bg')
+                .attr('rx', 8)
+                .attr('ry', 8)
+                .attr('fill', 'rgba(0, 0, 0, 0.85)')
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2);
+
+            // Tooltip sector name
+            tooltip.append('text')
+                .attr('class', 'tooltip-name')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '-0.5em')
+                .style('font-size', '13px')
+                .style('font-weight', 'bold')
+                .style('fill', '#fff');
+
+            // Tooltip percentage
+            tooltip.append('text')
+                .attr('class', 'tooltip-percentage')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '1.2em')
+                .style('font-size', '16px')
+                .style('font-weight', 'bold')
+                .style('fill', '#10b981');
+
             // Add slices
             const slices = svg.selectAll('path')
                 .data(pie(data))
@@ -525,91 +558,49 @@
                 .style('cursor', 'pointer')
                 .style('transition', 'all 0.2s ease')
                 .on('mouseover', function(event, d) {
-                    // Just change opacity, no size change
+                    // Highlight slice
                     d3.select(this)
                         .style('opacity', 0.8);
+                    
+                    // Show tooltip
+                    const centroid = arc.centroid(d);
+                    
+                    // Update tooltip text
+                    tooltip.select('.tooltip-name')
+                        .text(d.data.name.length > 30 ? d.data.name.substring(0, 27) + '...' : d.data.name);
+                    
+                    tooltip.select('.tooltip-percentage')
+                        .text(`${d.data.value.toFixed(2)}%`);
+                    
+                    // Calculate tooltip size
+                    const nameWidth = tooltip.select('.tooltip-name').node().getComputedTextLength();
+                    const percentWidth = tooltip.select('.tooltip-percentage').node().getComputedTextLength();
+                    const maxWidth = Math.max(nameWidth, percentWidth);
+                    
+                    // Update background size and position
+                    tooltip.select('.tooltip-bg')
+                        .attr('x', -(maxWidth / 2) - 12)
+                        .attr('y', -20)
+                        .attr('width', maxWidth + 24)
+                        .attr('height', 50);
+                    
+                    // Position tooltip at centroid
+                    tooltip
+                        .attr('transform', `translate(${centroid[0]}, ${centroid[1]})`)
+                        .style('display', null);
                 })
                 .on('mouseout', function(event, d) {
                     if (selectedSectorIndex !== d.data.index) {
                         d3.select(this)
                             .style('opacity', 1);
                     }
+                    
+                    // Hide tooltip
+                    tooltip.style('display', 'none');
                 })
                 .on('click', function(event, d) {
                     selectSector(d.data.index);
                 });
-
-            // Add sector labels on the donut chart
-            svg.selectAll('text.sector-label')
-                .data(pie(data))
-                .enter()
-                .append('text')
-                .attr('class', 'sector-label')
-                .attr('transform', d => {
-                    const pos = arc.centroid(d);
-                    // Move label outward for better readability
-                    const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-                    pos[0] = Math.cos(midAngle - Math.PI / 2) * (radius * 0.8);
-                    pos[1] = Math.sin(midAngle - Math.PI / 2) * (radius * 0.8);
-                    return `translate(${pos})`;
-                })
-                .attr('text-anchor', 'middle')
-                .attr('dy', '0.35em')
-                .style('font-size', '11px')
-                .style('font-weight', 'bold')
-                .style('fill', '#fff')
-                .style('pointer-events', 'none')
-                .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.5)')
-                .each(function(d) {
-                    const text = d3.select(this);
-                    const name = d.data.name;
-                    
-                    // For long sector names, split into multiple lines
-                    if (name.length > 25) {
-                        const words = name.split(' ');
-                        let line1 = '';
-                        let line2 = '';
-                        
-                        words.forEach((word, i) => {
-                            if (i < words.length / 2) {
-                                line1 += word + ' ';
-                            } else {
-                                line2 += word + ' ';
-                            }
-                        });
-                        
-                        text.append('tspan')
-                            .attr('x', 0)
-                            .attr('dy', '-0.6em')
-                            .text(line1.trim().substring(0, 15) + (line1.trim().length > 15 ? '...' : ''));
-                        
-                        text.append('tspan')
-                            .attr('x', 0)
-                            .attr('dy', '1.2em')
-                            .text(line2.trim().substring(0, 15) + (line2.trim().length > 15 ? '...' : ''));
-                    } else {
-                        text.text(name.substring(0, 20));
-                    }
-                });
-
-            // Add percentage labels on the donut chart
-            svg.selectAll('text.percentage-label')
-                .data(pie(data))
-                .enter()
-                .append('text')
-                .attr('class', 'percentage-label')
-                .attr('transform', d => {
-                    const pos = arc.centroid(d);
-                    return `translate(${pos})`;
-                })
-                .attr('text-anchor', 'middle')
-                .attr('dy', '0.35em')
-                .style('font-size', '10px')
-                .style('font-weight', 'bold')
-                .style('fill', '#fff')
-                .style('pointer-events', 'none')
-                .style('text-shadow', '1px 1px 2px rgba(0,0,0,0.5)')
-                .text(d => `${d.data.value.toFixed(1)}%`);
 
             // Add center text
             svg.append('text')
