@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fund Details - Sarmaaya Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         @keyframes rotateBorder {
             0% { transform: rotate(0deg); }
@@ -204,9 +205,28 @@
 
             <!-- Portfolio Composition -->
             <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Portfolio Composition by Sector</h2>
-                <div id="sectorsContainer" class="space-y-4">
-                    <!-- Sectors will be inserted here -->
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Portfolio Composition</h2>
+                
+                <!-- Sunburst Chart Container -->
+                <div id="sunburstContainer" class="hidden">
+                    <div id="sunburstChart" class="w-full flex justify-center mb-6">
+                        <!-- Chart will be rendered here -->
+                    </div>
+                    
+                    <!-- Legend/Selected Info -->
+                    <div id="selectedInfo" class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                        <div class="text-sm text-gray-600 mb-1">Click on sectors or companies to see details</div>
+                        <div id="selectionDetails" class="text-lg font-semibold text-gray-800">
+                            Hover or click to explore
+                        </div>
+                    </div>
+                </div>
+
+                <!-- No Data State -->
+                <div id="noSectorData" class="hidden text-center py-12">
+                    <div class="text-6xl mb-4">📊</div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">No Sector Composition Data</h3>
+                    <p class="text-gray-500">This fund does not have detailed sector breakdown available</p>
                 </div>
             </div>
         </div>
@@ -325,14 +345,228 @@
         }
 
         function renderSectors() {
-            const container = document.getElementById('sectorsContainer');
-            
+            // Check if sectors data exists
             if (!sunburstData.sectors || sunburstData.sectors.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-8">No sector data available</p>';
+                document.getElementById('noSectorData').classList.remove('hidden');
                 return;
             }
 
-            container.innerHTML = sunburstData.sectors.map(sector => createSectorCard(sector)).join('');
+            // Show sunburst container
+            document.getElementById('sunburstContainer').classList.remove('hidden');
+
+            // Prepare data for D3 sunburst
+            const sunburstChartData = prepareSunburstData();
+            
+            // Render the sunburst chart
+            createSunburstChart(sunburstChartData);
+        }
+
+        function prepareSunburstData() {
+            // Create hierarchical data structure for D3
+            const data = {
+                name: sunburstData.mutualFundName,
+                children: sunburstData.sectors.map(sector => ({
+                    name: sector.sector,
+                    sectorId: sector.sectorId,
+                    weightage: sector.sectorWeightage,
+                    changePercent: sector.sectorChangePercent,
+                    volume: sector.sectorVolume,
+                    marketValue: sector.sectorMarketValue,
+                    children: sector.companies.map(company => ({
+                        name: company.symbol,
+                        weightage: company.weightage,
+                        changePercent: company.changePercent,
+                        volume: company.volume,
+                        marketValue: company.marketValue,
+                        isSector: false
+                    })),
+                    isSector: true
+                }))
+            };
+
+            return data;
+        }
+
+        function createSunburstChart(data) {
+            const width = 600;
+            const height = 600;
+            const radius = Math.min(width, height) / 2;
+
+            // Color scale for sectors
+            const color = d3.scaleOrdinal()
+                .domain(data.children.map(d => d.name))
+                .range([
+                    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
+                    '#ef4444', '#06b6d4', '#ec4899', '#14b8a6',
+                    '#f97316', '#6366f1', '#84cc16', '#a855f7'
+                ]);
+
+            // Create hierarchy
+            const hierarchy = d3.hierarchy(data)
+                .sum(d => d.weightage || 0)
+                .sort((a, b) => b.value - a.value);
+
+            // Create partition layout
+            const partition = d3.partition()
+                .size([2 * Math.PI, radius]);
+
+            const root = partition(hierarchy);
+
+            // Create arc generator
+            const arc = d3.arc()
+                .startAngle(d => d.x0)
+                .endAngle(d => d.x1)
+                .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                .padRadius(radius / 2)
+                .innerRadius(d => d.y0)
+                .outerRadius(d => d.y1 - 1);
+
+            // Clear previous chart
+            d3.select('#sunburstChart').selectAll('*').remove();
+
+            // Create SVG
+            const svg = d3.select('#sunburstChart')
+                .append('svg')
+                .attr('viewBox', `${-width / 2} ${-height / 2} ${width} ${height}`)
+                .style('max-width', '600px')
+                .style('height', 'auto')
+                .style('font', '12px sans-serif');
+
+            // Add paths
+            const path = svg.append('g')
+                .selectAll('path')
+                .data(root.descendants().filter(d => d.depth > 0))
+                .join('path')
+                .attr('fill', d => {
+                    if (d.depth === 1) {
+                        // Sector level - use color scale
+                        return color(d.data.name);
+                    } else {
+                        // Company level - lighter shade of parent sector
+                        const parentColor = color(d.parent.data.name);
+                        return d3.color(parentColor).brighter(0.5);
+                    }
+                })
+                .attr('d', arc)
+                .style('cursor', 'pointer')
+                .style('stroke', '#fff')
+                .style('stroke-width', 2)
+                .on('mouseover', function(event, d) {
+                    d3.select(this)
+                        .style('opacity', 0.8)
+                        .style('stroke-width', 3);
+                    
+                    showDetails(d);
+                })
+                .on('mouseout', function(event, d) {
+                    d3.select(this)
+                        .style('opacity', 1)
+                        .style('stroke-width', 2);
+                })
+                .on('click', function(event, d) {
+                    showDetails(d);
+                });
+
+            // Add labels for sectors (outer ring)
+            svg.append('g')
+                .attr('pointer-events', 'none')
+                .attr('text-anchor', 'middle')
+                .selectAll('text')
+                .data(root.descendants().filter(d => d.depth === 1 && (d.x1 - d.x0) > 0.1))
+                .join('text')
+                .attr('transform', d => {
+                    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                    const y = (d.y0 + d.y1) / 2;
+                    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+                })
+                .attr('dy', '0.35em')
+                .style('font-size', '11px')
+                .style('font-weight', 'bold')
+                .style('fill', '#fff')
+                .text(d => d.data.name.length > 20 ? d.data.name.substring(0, 17) + '...' : d.data.name);
+
+            // Add center text
+            svg.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '-0.5em')
+                .style('font-size', '16px')
+                .style('font-weight', 'bold')
+                .style('fill', '#1f2937')
+                .text(sunburstData.mutualFundName.substring(0, 20));
+
+            svg.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '1em')
+                .style('font-size', '14px')
+                .style('fill', '#6b7280')
+                .text('Portfolio');
+
+            // Add animation
+            path.style('opacity', 0)
+                .transition()
+                .duration(800)
+                .style('opacity', 1);
+        }
+
+        function showDetails(d) {
+            const detailsEl = document.getElementById('selectionDetails');
+            
+            if (d.depth === 1) {
+                // Sector selected
+                const sector = d.data;
+                detailsEl.innerHTML = `
+                    <div class="font-bold text-xl text-blue-600 mb-2">${sector.name}</div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <div class="text-gray-500">Weightage</div>
+                            <div class="font-semibold text-gray-800">${sector.weightage?.toFixed(2)}%</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Change</div>
+                            <div class="font-semibold ${sector.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${sector.changePercent >= 0 ? '+' : ''}${sector.changePercent?.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Volume</div>
+                            <div class="font-semibold text-gray-800">${formatNumber(sector.volume)}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Market Value</div>
+                            <div class="font-semibold text-gray-800">PKR ${formatNumber(sector.marketValue)}</div>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500">${sector.children?.length || 0} companies in this sector</div>
+                `;
+            } else if (d.depth === 2) {
+                // Company selected
+                const company = d.data;
+                const sector = d.parent.data;
+                detailsEl.innerHTML = `
+                    <div class="font-bold text-xl text-indigo-600 mb-1">${company.name}</div>
+                    <div class="text-sm text-gray-600 mb-2">in ${sector.name}</div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <div class="text-gray-500">Weightage</div>
+                            <div class="font-semibold text-gray-800">${company.weightage?.toFixed(2)}%</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Change</div>
+                            <div class="font-semibold ${company.changePercent >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${company.changePercent >= 0 ? '+' : ''}${company.changePercent?.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Volume</div>
+                            <div class="font-semibold text-gray-800">${formatNumber(company.volume)}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-500">Market Value</div>
+                            <div class="font-semibold text-gray-800">PKR ${formatNumber(company.marketValue)}</div>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         function createSectorCard(sector) {
